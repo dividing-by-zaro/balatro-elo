@@ -2,10 +2,20 @@
 from fastapi import FastAPI, Request, HTTPException, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 import crud
 from database import connect_to_mongo, close_mongo_connection
 
 app = FastAPI(title="Balatro Joker Arena", description="Compare jokers with ELO")
+
+# Add CORS middleware to allow external image loading
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Setup templates
 templates = Jinja2Templates(directory="templates")

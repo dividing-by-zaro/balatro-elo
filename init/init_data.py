@@ -2,11 +2,21 @@
 import asyncio
 import csv
 import os
+import sys
+from pathlib import Path
+
+# Add parent directory to path to allow imports from parent
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from database import connect_to_mongo, close_mongo_connection, get_database
 from crud import create_card, get_card_count
 
+# Get the directory where this script is located
+SCRIPT_DIR = Path(__file__).parent
 
-async def load_cards_from_csv(csv_file="jokers.csv"):
+async def load_cards_from_csv(csv_file=None):
+    if csv_file is None:
+        csv_file = SCRIPT_DIR / "jokers.csv"
     """Load cards from CSV file"""
     cards = []
     
