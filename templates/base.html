@@ -162,5 +162,116 @@
     </div>
 
     {% block extra_js %}{% endblock %}
+
+    <script>
+        // Client-side routing for smooth navigation
+        (function() {
+            const container = document.querySelector('.container');
+            const tabLinks = document.querySelectorAll('.tab-item');
+
+            // Function to load page content via AJAX
+            async function loadPage(url, pushState = true) {
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('Failed to load page');
+
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+
+                    // Extract the new content
+                    const newContainer = doc.querySelector('.container');
+                    if (newContainer) {
+                        // Replace the container content
+                        container.innerHTML = newContainer.innerHTML;
+
+                        // Update page title
+                        const newTitle = doc.querySelector('title');
+                        if (newTitle) {
+                            document.title = newTitle.textContent;
+                        }
+
+                        // Update page-specific styles
+                        updatePageStyles(doc);
+
+                        // Re-attach event listeners to new navigation links
+                        attachNavigationListeners();
+
+                        // Re-execute any scripts in the new content
+                        executeScripts(container);
+
+                        // Update URL if needed
+                        if (pushState) {
+                            history.pushState({url: url}, '', url);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Navigation error:', error);
+                    // Fall back to normal navigation on error
+                    window.location.href = url;
+                }
+            }
+
+            // Function to update page-specific styles
+            function updatePageStyles(doc) {
+                // Remove existing page-specific styles
+                const oldPageStyles = document.querySelectorAll('style[data-page-styles]');
+                oldPageStyles.forEach(style => style.remove());
+
+                // Add new page-specific styles
+                const newStyles = doc.querySelectorAll('head style');
+                newStyles.forEach(style => {
+                    const newStyleElement = document.createElement('style');
+                    newStyleElement.textContent = style.textContent;
+                    newStyleElement.setAttribute('data-page-styles', 'true');
+                    document.head.appendChild(newStyleElement);
+                });
+            }
+
+            // Function to execute scripts in newly loaded content
+            function executeScripts(container) {
+                const scripts = container.querySelectorAll('script');
+                scripts.forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    Array.from(oldScript.attributes).forEach(attr => {
+                        newScript.setAttribute(attr.name, attr.value);
+                    });
+                    newScript.textContent = oldScript.textContent;
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+            }
+
+            // Function to attach click listeners to navigation links
+            function attachNavigationListeners() {
+                const links = document.querySelectorAll('.tab-item');
+                links.forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const url = this.getAttribute('href');
+
+                        // Don't reload if already on this page
+                        if (window.location.pathname === url) {
+                            return;
+                        }
+
+                        loadPage(url);
+                    });
+                });
+            }
+
+            // Handle browser back/forward buttons
+            window.addEventListener('popstate', function(e) {
+                if (e.state && e.state.url) {
+                    loadPage(e.state.url, false);
+                } else {
+                    loadPage(window.location.pathname, false);
+                }
+            });
+
+            // Initialize: attach listeners and set initial state
+            attachNavigationListeners();
+            history.replaceState({url: window.location.pathname}, '', window.location.pathname);
+        })();
+    </script>
 </body>
 </html>
